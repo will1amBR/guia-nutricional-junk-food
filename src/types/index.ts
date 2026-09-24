@@ -87,6 +87,21 @@ export interface RegistroAlimentar {
   }
 }
 
+export type IntensidadeExercicio = 'Leve' | 'Moderada' | 'Intensa'
+
+export interface ExercicioRegistro {
+  id: string
+  usuario: string
+  tipo: string
+  duracao_min: number
+  intensidade: IntensidadeExercicio
+  calorias_queimadas: number
+  data: string
+  observacao?: string
+  created?: string
+  updated?: string
+}
+
 export interface UserAuth {
   id: string
   email: string

@@ -7,11 +7,25 @@ import {
   removeFoodLog,
 } from '@/services/nutrition'
 import {
+  fetchDailyExercises,
+  addExerciseLog,
+  removeExerciseLog,
+  calculateDailyExerciseTotals,
+  estimateExerciseCalories,
+  EXERCISE_METS,
+} from '@/services/exercise'
+import {
   MEAL_DEFINITIONS,
   calculateDailyTotals,
   rankCatalogRecommendations,
 } from '@/services/recommendations'
-import type { CatalogItem, RegistroAlimentar, RefeicaoTipo } from '@/types'
+import type {
+  CatalogItem,
+  RegistroAlimentar,
+  RefeicaoTipo,
+  ExercicioRegistro,
+  IntensidadeExercicio,
+} from '@/types'
 import {
   CalendarDays,
   Plus,
@@ -25,7 +39,16 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Activity,
+  Dumbbell,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -56,8 +79,17 @@ export default function Diet() {
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [logs, setLogs] = useState<RegistroAlimentar[]>([])
+  const [exercises, setExercises] = useState<ExercicioRegistro[]>([])
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Add Exercise Modal state
+  const [exerciseModalOpen, setExerciseModalOpen] = useState(false)
+  const [exTipo, setExTipo] = useState('Musculacao')
+  const [exDuracao, setExDuracao] = useState('45')
+  const [exIntensidade, setExIntensidade] = useState<IntensidadeExercicio>('Moderada')
+  const [exObs, setExObs] = useState('')
+  const [savingExercise, setSavingExercise] = useState(false)
 
   // Add Food Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -78,11 +110,13 @@ export default function Diet() {
   const loadData = async () => {
     if (!user) return
     try {
-      const [userLogs, allCatalog] = await Promise.all([
+      const [userLogs, userExercises, allCatalog] = await Promise.all([
         fetchDailyFoodLogs(user.id, selectedDateStr),
+        fetchDailyExercises(user.id, selectedDateStr),
         fetchCatalogItems(),
       ])
       setLogs(userLogs)
+      setExercises(userExercises)
       setCatalog(allCatalog)
     } catch (err) {
       console.error('Erro ao carregar dados da dieta:', err)
@@ -94,8 +128,8 @@ export default function Diet() {
   useEffect(() => {
     loadData()
 
-    // Realtime subscription
-    const unsubscribe = pb.collection('registros_alimentares').subscribe('*', (e) => {
+    // Realtime subscription for food logs
+    const unsubFoods = pb.collection('registros_alimentares').subscribe('*', (e) => {
       if (e.action === 'create' || e.action === 'delete') {
         if (user?.id) {
           fetchDailyFoodLogs(user.id, selectedDateStr).then(setLogs).catch(console.error)
@@ -103,13 +137,29 @@ export default function Diet() {
       }
     })
 
+    // Realtime subscription for exercises
+    const unsubExercises = pb.collection('exercicios').subscribe('*', (e) => {
+      if (e.action === 'create' || e.action === 'delete') {
+        if (user?.id) {
+          fetchDailyExercises(user.id, selectedDateStr).then(setExercises).catch(console.error)
+        }
+      }
+    })
+
     return () => {
-      unsubscribe.then((unsub) => unsub())
+      unsubFoods.then((unsub) => unsub())
+      unsubExercises.then((unsub) => unsub())
     }
   }, [user, selectedDateStr])
 
   const totals = useMemo(() => calculateDailyTotals(logs), [logs])
+  const exerciseTotals = useMemo(() => calculateDailyExerciseTotals(exercises), [exercises])
   const metaCalorias = profile?.meta_calorias || 2000
+
+  // Saldo ajustado com exercício: Meta + Queimadas no Exercício - Consumidas
+  const caloriasQueimadas = exerciseTotals.totalCaloriesBurned
+  const metaAjustadaComTreino = metaCalorias + caloriasQueimadas
+  const caloriasRestantes = Math.max(0, metaAjustadaComTreino - totals.calorias)
 
   // Target macros in grams
   const metaProtGrams = Math.round((((profile?.meta_proteina_pct || 25) / 100) * metaCalorias) / 4)
@@ -118,7 +168,10 @@ export default function Diet() {
   )
   const metaFatGrams = Math.round((((profile?.meta_gordura_pct || 25) / 100) * metaCalorias) / 9)
 
-  const caloriesPercent = Math.min(100, Math.round((totals.calorias / metaCalorias) * 100))
+  const caloriesPercent = Math.min(
+    100,
+    Math.round((totals.calorias / Math.max(1, metaAjustadaComTreino)) * 100),
+  )
   const protPercent = Math.min(100, Math.round((totals.proteina_g / (metaProtGrams || 1)) * 100))
   const carbPercent = Math.min(100, Math.round((totals.carboidrato_g / (metaCarbGrams || 1)) * 100))
   const fatPercent = Math.min(100, Math.round((totals.gordura_g / (metaFatGrams || 1)) * 100))
@@ -239,6 +292,58 @@ export default function Diet() {
     return scored.filter((r) => r.melhorMomento.refeicao === targetSlot).slice(0, 3)
   }, [catalog, profile, logs, targetSlot])
 
+  const handleAddExercise = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+    const durMin = parseInt(exDuracao, 10) || 30
+    const tipoLabel = EXERCISE_METS[exTipo]?.label || exTipo
+    setSavingExercise(true)
+    try {
+      await addExerciseLog(user.id, {
+        tipo: tipoLabel,
+        duracao_min: durMin,
+        intensidade: exIntensidade,
+        data: selectedDateStr,
+        observacao: exObs.trim(),
+      })
+      toast({
+        title: 'Exercício registrado!',
+        description: `${tipoLabel} (${durMin} min) adicionou calorias ao seu saldo diário.`,
+      })
+      const updated = await fetchDailyExercises(user.id, selectedDateStr)
+      setExercises(updated)
+      setExerciseModalOpen(false)
+      setExObs('')
+    } catch (err) {
+      console.error('Erro ao adicionar exercício:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao registrar exercício',
+        description: 'Tente novamente.',
+      })
+    } finally {
+      setSavingExercise(false)
+    }
+  }
+
+  const handleDeleteExercise = async (id: string, tipo: string) => {
+    try {
+      await removeExerciseLog(id)
+      toast({
+        title: 'Exercício removido',
+        description: `${tipo} removido do dia.`,
+      })
+      setExercises((prev) => prev.filter((ex) => ex.id !== id))
+    } catch (err) {
+      console.error('Erro ao remover exercício:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao remover',
+        description: 'Tente novamente.',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -333,16 +438,62 @@ export default function Diet() {
         </div>
       </div>
 
-      {/* Day Overview: Calories & Macros */}
+      {/* Day Overview: Calories & Exercise Integration */}
       <div className="bg-white rounded-2xl p-6 border border-orange-100 shadow-sm space-y-6">
         <div>
-          <div className="flex justify-between items-baseline mb-2">
-            <h2 className="text-lg font-bold text-gray-900">Visão Geral do Dia</h2>
-            <span className="text-sm font-semibold text-gray-600">
-              <strong className="text-gray-900">{totals.calorias}</strong> / {metaCalorias} kcal
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Balanço Energético & Exercícios</h2>
+              <p className="text-xs text-gray-500">
+                Fórmula: Meta ({metaCalorias} kcal) + Exercício (+{caloriasQueimadas} kcal) −
+                Consumido ({totals.calorias} kcal)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                Saldo: {caloriasRestantes} kcal restantes
+              </span>
+            </div>
           </div>
-          <Progress value={caloriesPercent} className="h-3 bg-orange-100" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="bg-orange-50/60 p-3.5 rounded-xl border border-orange-100">
+              <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                Consumidas
+              </span>
+              <span className="text-2xl font-extrabold text-[#FF6B35]">{totals.calorias}</span>
+              <span className="text-xs text-gray-500 ml-1">kcal</span>
+            </div>
+
+            <div className="bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-100">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase text-emerald-800 block">
+                  Queimadas no Treino
+                </span>
+                <Activity className="w-4 h-4 text-emerald-600" />
+              </div>
+              <span className="text-2xl font-extrabold text-emerald-700">+{caloriasQueimadas}</span>
+              <span className="text-xs text-gray-500 ml-1">
+                kcal ({exerciseTotals.totalMinutes} min)
+              </span>
+            </div>
+
+            <div className="bg-teal-50/60 p-3.5 rounded-xl border border-teal-100">
+              <span className="text-[11px] font-bold uppercase text-teal-800 block">
+                Saldo Restante
+              </span>
+              <span className="text-2xl font-extrabold text-[#2EC4B6]">{caloriasRestantes}</span>
+              <span className="text-xs text-gray-500 ml-1">kcal livres</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs font-semibold text-gray-600">
+              <span>{totals.calorias} kcal consumidas</span>
+              <span>Limite ajustado: {metaAjustadaComTreino} kcal</span>
+            </div>
+            <Progress value={caloriesPercent} className="h-3 bg-orange-100" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100">
@@ -380,6 +531,93 @@ export default function Diet() {
           </div>
         </div>
       </div>
+
+      {/* Exercícios do Dia Section */}
+      <section className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+              <Dumbbell className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-extrabold text-gray-900 text-base">Exercícios do Dia</h2>
+                <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-bold border-emerald-200">
+                  +{caloriasQueimadas} kcal
+                </Badge>
+              </div>
+              <p className="text-xs text-gray-500">
+                Registre suas atividades físicas para somar calorias ao seu saldo diário.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            size="sm"
+            onClick={() => setExerciseModalOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl h-8 px-3.5 gap-1.5 self-start sm:self-auto shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" /> Registrar Exercício
+          </Button>
+        </div>
+
+        {exercises.length === 0 ? (
+          <div className="text-center py-6 bg-emerald-50/30 rounded-xl border border-dashed border-emerald-200 p-4">
+            <p className="text-xs font-medium text-gray-600">
+              Nenhum exercício registrado para este dia.
+            </p>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              Fez uma caminhada, musculação ou corrida? Registre para abrir mais espaço na meta!
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExerciseModalOpen(true)}
+              className="mt-3 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs h-7"
+            >
+              <Plus className="w-3 h-3 mr-1" /> Adicionar atividade
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {exercises.map((ex) => (
+              <div
+                key={ex.id}
+                className="flex items-start justify-between p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-100 transition-all hover:bg-emerald-50/70"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900 text-sm">{ex.tipo}</span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-semibold border-emerald-300 text-emerald-800 bg-white"
+                    >
+                      {ex.intensidade}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <span>{ex.duracao_min} min</span>
+                    <span>•</span>
+                    <strong className="text-emerald-700">+{ex.calorias_queimadas} kcal</strong>
+                  </div>
+                  {ex.observacao && (
+                    <p className="text-[11px] text-gray-500 italic line-clamp-1">{ex.observacao}</p>
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteExercise(ex.id, ex.tipo)}
+                  className="h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Meal Timeline */}
       <section className="space-y-4">
@@ -615,6 +853,114 @@ export default function Diet() {
               ))}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Exercise Modal */}
+      <Dialog open={exerciseModalOpen} onOpenChange={setExerciseModalOpen}>
+        <DialogContent className="max-w-md rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-900 text-lg">
+              <Activity className="w-5 h-5 text-emerald-600" /> Registrar Exercício Físico
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              As calorias queimadas ampliam seu saldo de calorias restantes para o dia.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAddExercise} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">Tipo de Exercício</label>
+              <Select value={exTipo} onValueChange={setExTipo}>
+                <SelectTrigger className="bg-white border-orange-100 rounded-xl text-sm">
+                  <SelectValue placeholder="Selecione a atividade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(EXERCISE_METS).map(([key, info]) => (
+                    <SelectItem key={key} value={key}>
+                      {info.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">Duração (minutos)</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="360"
+                  value={exDuracao}
+                  onChange={(e) => setExDuracao(e.target.value)}
+                  className="rounded-xl bg-white border-orange-100 text-sm"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">Intensidade</label>
+                <Select
+                  value={exIntensidade}
+                  onValueChange={(v) => setExIntensidade(v as IntensidadeExercicio)}
+                >
+                  <SelectTrigger className="bg-white border-orange-100 rounded-xl text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Leve">Leve</SelectItem>
+                    <SelectItem value="Moderada">Moderada</SelectItem>
+                    <SelectItem value="Intensa">Intensa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Estimated Burn preview */}
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+              <span className="text-emerald-900 font-medium">Estimativa calórica calculada:</span>
+              <span className="font-extrabold text-emerald-800 text-sm">
+                ~{estimateExerciseCalories(exTipo, parseInt(exDuracao, 10) || 0, exIntensidade)}{' '}
+                kcal queimadas
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700">
+                Observação <span className="font-normal text-gray-400">(opcional)</span>
+              </label>
+              <Input
+                placeholder="Ex: Treino de pernas, ritmo constante..."
+                value={exObs}
+                onChange={(e) => setExObs(e.target.value)}
+                className="rounded-xl bg-white border-orange-100 text-sm"
+              />
+            </div>
+
+            <DialogFooter className="mt-4 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setExerciseModalOpen(false)}
+                disabled={savingExercise}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingExercise}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
+                {savingExercise ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-1" />
+                )}
+                Salvar Exercício
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

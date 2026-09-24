@@ -21,6 +21,7 @@ import {
   Check,
   Plus,
   Loader2,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -286,6 +287,16 @@ export default function CatalogDetail() {
                   </>
                 )}
               </Button>
+
+              <Button
+                asChild
+                variant="outline"
+                className="w-full sm:w-auto py-6 px-5 border-orange-200 text-gray-800 hover:bg-orange-50 font-bold text-sm rounded-xl transition-all shadow-xs gap-2"
+              >
+                <Link to={`/compare?item1=${item.id}`}>
+                  <ArrowLeftRight className="w-4 h-4 text-[#FF6B35]" /> Comparar Alimento
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -301,11 +312,11 @@ export default function CatalogDetail() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card 1: Melhor Momento */}
+          {/* Card 1: Momento Indicado */}
           <div className="bg-white rounded-2xl p-6 border-l-4 border-l-[#FF6B35] border border-orange-100 shadow-sm relative space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#FF6B35]" /> Melhor Momento para Comer
+                <Clock className="w-3.5 h-3.5 text-[#FF6B35]" /> Momento Indicado para Comer
               </span>
               {recommendation.melhorMomento.isNow && (
                 <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white text-[10px] font-bold">
@@ -324,11 +335,11 @@ export default function CatalogDetail() {
             </div>
           </div>
 
-          {/* Card 2: Melhor Lugar */}
+          {/* Card 2: Onde Encontrar */}
           <div className="bg-white rounded-2xl p-6 border-l-4 border-l-[#2EC4B6] border border-teal-100 shadow-sm relative space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#2EC4B6]" /> Melhor Lugar
+                <MapPin className="w-3.5 h-3.5 text-[#2EC4B6]" /> Onde Encontrar
               </span>
               <Badge
                 variant="outline"

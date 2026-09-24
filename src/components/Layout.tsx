@@ -16,6 +16,7 @@ import {
   BarChart3,
   Award,
   ShieldCheck,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +32,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 const baseNavLinks = [
   { name: 'Início', path: '/app', icon: Home },
   { name: 'Catálogo', path: '/catalog', icon: BookOpen },
+  { name: 'Comparador', path: '/compare', icon: ArrowLeftRight },
   { name: 'Recomendações', path: '/recommendations', icon: Sparkles },
   { name: 'Assistente', path: '/assistant', icon: Bot },
   { name: 'Minha Dieta', path: '/diet', icon: CalendarDays },

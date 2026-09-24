@@ -26,6 +26,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
 const SUGGESTED_QUESTIONS = [
+  'Fiz 45 min de musculação hoje, como fica meu saldo para comer pizza?',
   'Estou no Burger King e quero um sanduíche de carne, qual escolher? Whopper?',
   'Posso comer pizza hoje à noite sem estragar minha meta de calorias?',
   "O que pedir no McDonald's com maior quantidade de proteína para pós-treino?",

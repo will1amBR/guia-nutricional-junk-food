@@ -13,6 +13,7 @@ import {
   Loader2,
   ShieldCheck,
   Plus,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
@@ -288,7 +289,7 @@ export default function Catalog() {
                     </div>
                   </div>
 
-                  <div className="p-5 pt-0">
+                  <div className="p-5 pt-0 space-y-2">
                     <Button
                       asChild
                       className="w-full bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-semibold rounded-xl text-sm shadow-sm transition-all"
@@ -298,6 +299,18 @@ export default function Catalog() {
                         className="flex items-center justify-center gap-1.5"
                       >
                         Ver Detalhes <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="w-full border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold rounded-xl text-xs h-8"
+                    >
+                      <Link
+                        to={`/compare?item1=${item.id}`}
+                        className="flex items-center justify-center gap-1.5"
+                      >
+                        <ArrowLeftRight className="w-3.5 h-3.5 text-[#FF6B35]" /> Comparar
                       </Link>
                     </Button>
                   </div>

@@ -186,8 +186,8 @@ export default function LandingPage() {
           </Badge>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-[1.1] max-w-4xl mx-auto">
-            Descubra o <span className="text-[#FF6B35]">Melhor Momento</span> e o{' '}
-            <span className="text-[#2EC4B6]">Melhor Lugar</span> para seu Fast Food.
+            Descubra o <span className="text-[#FF6B35]">Momento Ideal</span> e o{' '}
+            <span className="text-[#2EC4B6]">Lugar Certo</span> para seu Fast Food.
           </h1>
 
           <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">

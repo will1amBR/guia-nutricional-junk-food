@@ -2,8 +2,14 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCatalogItems, fetchDailyFoodLogs } from '@/services/nutrition'
+import { fetchDailyExercises, calculateDailyExerciseTotals } from '@/services/exercise'
 import { calculateDailyTotals, rankCatalogRecommendations } from '@/services/recommendations'
-import type { CatalogItem, RegistroAlimentar, RecommendationResult } from '@/types'
+import type {
+  CatalogItem,
+  RegistroAlimentar,
+  RecommendationResult,
+  ExercicioRegistro,
+} from '@/types'
 import {
   Flame,
   Target,
@@ -16,6 +22,8 @@ import {
   CalendarCheck,
   ChevronRight,
   Loader2,
+  Activity,
+  Dumbbell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -30,6 +38,7 @@ export default function Index() {
   const { user, profile } = useAuth()
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [todayLogs, setTodayLogs] = useState<RegistroAlimentar[]>([])
+  const [todayExercises, setTodayExercises] = useState<ExercicioRegistro[]>([])
   const [allLogs, setAllLogs] = useState<RegistroAlimentar[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,13 +59,15 @@ export default function Index() {
   const loadData = async () => {
     if (!user) return
     try {
-      const [catItems, logs, allUserLogs] = await Promise.all([
+      const [catItems, logs, exercises, allUserLogs] = await Promise.all([
         fetchCatalogItems(),
         fetchDailyFoodLogs(user.id, todayStr),
+        fetchDailyExercises(user.id, todayStr),
         fetchAllUserFoodLogs(user.id),
       ])
       setCatalog(catItems)
       setTodayLogs(logs)
+      setTodayExercises(exercises)
       setAllLogs(allUserLogs)
 
       // Always show prompt on entry if not answered in this session yet
@@ -93,7 +104,7 @@ export default function Index() {
     loadData()
 
     // Realtime subscription for food logs
-    const unsubscribe = pb.collection('registros_alimentares').subscribe('*', (e) => {
+    const unsubFoods = pb.collection('registros_alimentares').subscribe('*', (e) => {
       if (e.action === 'create' || e.action === 'update' || e.action === 'delete') {
         if (user?.id) {
           fetchDailyFoodLogs(user.id, todayStr).then(setTodayLogs).catch(console.error)
@@ -101,12 +112,26 @@ export default function Index() {
       }
     })
 
+    // Realtime subscription for exercises
+    const unsubExercises = pb.collection('exercicios').subscribe('*', (e) => {
+      if (e.action === 'create' || e.action === 'update' || e.action === 'delete') {
+        if (user?.id) {
+          fetchDailyExercises(user.id, todayStr).then(setTodayExercises).catch(console.error)
+        }
+      }
+    })
+
     return () => {
-      unsubscribe.then((unsub) => unsub())
+      unsubFoods.then((unsub) => unsub())
+      unsubExercises.then((unsub) => unsub())
     }
   }, [user, todayStr])
 
   const totals = useMemo(() => calculateDailyTotals(todayLogs), [todayLogs])
+  const exerciseTotals = useMemo(
+    () => calculateDailyExerciseTotals(todayExercises),
+    [todayExercises],
+  )
 
   // Gamification & streak stats
   const gamificationStats = useMemo(() => {
@@ -150,8 +175,13 @@ export default function Index() {
   const topJunkFood = recommendations[0] || null
 
   const metaCalorias = profile?.meta_calorias || 2000
-  const remainingCalories = Math.max(0, metaCalorias - totals.calorias)
-  const caloriesPercent = Math.min(100, Math.round((totals.calorias / metaCalorias) * 100))
+  const caloriasQueimadas = exerciseTotals.totalCaloriesBurned
+  const metaAjustada = metaCalorias + caloriasQueimadas
+  const remainingCalories = Math.max(0, metaAjustada - totals.calorias)
+  const caloriesPercent = Math.min(
+    100,
+    Math.round((totals.calorias / Math.max(1, metaAjustada)) * 100),
+  )
 
   // Macros in grams target: protein (4 kcal/g), carbs (4 kcal/g), fat (9 kcal/g)
   const metaProtGrams = Math.round((((profile?.meta_proteina_pct || 25) / 100) * metaCalorias) / 4)
@@ -294,27 +324,36 @@ export default function Index() {
 
       {/* 3 Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Calorias do Dia */}
+        {/* Card 1: Calorias do Dia com Exercício */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-100/70 hover:shadow-md transition-shadow relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-              Balanço Energético
+              Balanço Ajustado
             </span>
             <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#FF6B35] flex items-center justify-center">
               <Flame className="w-5 h-5" />
             </div>
           </div>
-          <h3 className="text-sm font-semibold text-gray-500">Calorias do Dia</h3>
+          <h3 className="text-sm font-semibold text-gray-500">Calorias Restantes do Dia</h3>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-gray-900">
               {remainingCalories.toLocaleString('pt-BR')}
             </span>
             <span className="text-sm font-medium text-gray-500">kcal restantes</span>
           </div>
-          <div className="mt-4 space-y-1.5">
+
+          {/* Exercise mini-tag */}
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+            <Activity className="w-3.5 h-3.5" />
+            <span>
+              +{caloriasQueimadas} kcal de exercício ({exerciseTotals.totalMinutes} min)
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-1.5">
             <div className="flex justify-between text-xs text-gray-500">
-              <span>Consumido: {totals.calorias} kcal</span>
-              <span>Meta: {metaCalorias} kcal</span>
+              <span>Consumo: {totals.calorias} kcal</span>
+              <span>Limite: {metaAjustada} kcal</span>
             </div>
             <Progress value={caloriesPercent} className="h-2 bg-orange-100" />
           </div>
