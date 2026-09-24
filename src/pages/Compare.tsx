@@ -19,6 +19,7 @@ import {
   Loader2,
   MapPin,
   Utensils,
+  UserPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -227,13 +228,25 @@ export default function Compare() {
           </p>
         </div>
 
-        <Button
-          asChild
-          variant="outline"
-          className="border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold text-xs h-9 self-start sm:self-auto"
-        >
-          <Link to="/catalog">Explorar Catálogo</Link>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {!user && (
+            <Button
+              asChild
+              className="bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-xs h-9 gap-1.5"
+            >
+              <Link to="/signup">
+                <UserPlus className="w-3.5 h-3.5" /> Criar Conta
+              </Link>
+            </Button>
+          )}
+          <Button
+            asChild
+            variant="outline"
+            className="border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold text-xs h-9"
+          >
+            <Link to="/catalog">Explorar Catálogo</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Selectors Bar */}
@@ -493,11 +506,18 @@ export default function Compare() {
       {/* Veredicto Personalizado */}
       {verdict && (
         <div className="bg-gradient-to-br from-white to-amber-50/60 rounded-3xl p-6 sm:p-8 border-2 border-orange-200 shadow-md space-y-4">
-          <div className="flex items-center gap-2.5 text-[#FF6B35]">
-            <Sparkles className="w-6 h-6" />
-            <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">
-              Veredicto Personalizado para seu Perfil
-            </h3>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2.5 text-[#FF6B35]">
+              <Sparkles className="w-6 h-6" />
+              <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">
+                {user ? 'Veredicto Personalizado para seu Perfil' : 'Veredicto Nutricional do Guia'}
+              </h3>
+            </div>
+            {!user && (
+              <Badge variant="outline" className="border-orange-200 text-orange-700 text-xs">
+                Modo Visitante
+              </Badge>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-2xs space-y-3">
@@ -506,12 +526,16 @@ export default function Compare() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 {verdict.winnerTitle}
               </span>
-              {profile && (
+              {profile ? (
                 <span className="text-xs text-gray-500">
                   Calibrado para dieta: {profile.dieta_atual?.join(', ') || 'Onívora'}
                   {profile.condicoes?.length > 0 && profile.condicoes[0] !== 'Nenhuma'
                     ? ` • Condições: ${profile.condicoes.join(', ')}`
                     : ''}
+                </span>
+              ) : (
+                <span className="text-xs text-gray-400">
+                  Cadastre-se para considerar hipertensão, diabetes ou low-carb
                 </span>
               )}
             </div>

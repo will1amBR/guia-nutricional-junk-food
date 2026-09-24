@@ -14,6 +14,7 @@ import LandingPage from './pages/LandingPage'
 import Index from './pages/Index'
 import Catalog from './pages/Catalog'
 import CatalogDetail from './pages/CatalogDetail'
+import Compare from './pages/Compare'
 import Recommendations from './pages/Recommendations'
 import Diet from './pages/Diet'
 import Profile from './pages/Profile'
@@ -49,18 +50,22 @@ const App = () => (
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
 
-          {/* Protected routes wrapped by RequireAuth + Layout */}
-          <Route element={<RequireAuth />}>
-            <Route element={<Layout />}>
+          {/* Routes sharing Layout (some public, some protected) */}
+          <Route element={<Layout />}>
+            {/* Public catalog routes */}
+            <Route path="/catalog" element={<Catalog />} />
+            <Route path="/catalog/:id" element={<CatalogDetail />} />
+            <Route path="/compare" element={<Compare />} />
+
+            {/* Protected routes wrapped by RequireAuth */}
+            <Route element={<RequireAuth />}>
               <Route path="/app" element={<Index />} />
-              <Route path="/catalog" element={<Catalog />} />
-              <Route path="/catalog/:id" element={<CatalogDetail />} />
               <Route path="/recommendations" element={<Recommendations />} />
               <Route path="/assistant" element={<AssistantChat />} />
               <Route path="/diet" element={<Diet />} />
               <Route path="/report" element={<WeeklyReport />} />
               <Route path="/achievements" element={<Achievements />} />
-              <Route path="/profile" element={<Profile />} />{' '}
+              <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<CatalogAdmin />} />
             </Route>
           </Route>

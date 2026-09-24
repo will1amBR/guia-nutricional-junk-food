@@ -22,6 +22,9 @@ import {
   Plus,
   Loader2,
   ArrowLeftRight,
+  UserPlus,
+  Lock,
+  LogIn,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +104,11 @@ export default function CatalogDetail() {
   }, [item, allItems])
 
   const handleToggleDiet = async () => {
-    if (!user || !item || !recommendation) return
+    if (!user) {
+      navigate('/login', { state: { from: { pathname: `/catalog/${item?.id || ''}` } } })
+      return
+    }
+    if (!item || !recommendation) return
 
     setAddingToDiet(true)
     try {
@@ -257,36 +264,57 @@ export default function CatalogDetail() {
               <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 px-3.5 py-1.5 rounded-full">
                 <Sparkles className="w-4 h-4 text-[#FF6B35]" />
                 <span className="text-xs font-bold text-orange-950">
-                  Compatibilidade com seu perfil:{' '}
-                  <strong className="text-[#FF6B35]">{recommendation.matchScore}%</strong>
+                  {user ? (
+                    <>
+                      Compatibilidade com seu perfil:{' '}
+                      <strong className="text-[#FF6B35]">{recommendation.matchScore}%</strong>
+                    </>
+                  ) : (
+                    <>
+                      Pontuação geral de equilíbrio:{' '}
+                      <strong className="text-[#FF6B35]">{recommendation.matchScore}%</strong>
+                      <span className="text-gray-400 font-normal"> (faça login para calibrar)</span>
+                    </>
+                  )}
                 </span>
               </div>
             </div>
 
             <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3">
-              <Button
-                onClick={handleToggleDiet}
-                disabled={addingToDiet}
-                className={`w-full sm:flex-1 py-6 font-bold text-sm rounded-xl transition-all shadow-sm ${
-                  isSavedInDiet
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'bg-[#FF6B35] hover:bg-[#E55A2B] text-white'
-                }`}
-              >
-                {addingToDiet ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Registrando...
-                  </>
-                ) : isSavedInDiet ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" /> Adicionado à Dieta de Hoje
-                  </>
-                ) : (
-                  <>
-                    <Heart className="w-4 h-4 mr-2 fill-white" /> Adicionar à Minha Dieta
-                  </>
-                )}
-              </Button>
+              {user ? (
+                <Button
+                  onClick={handleToggleDiet}
+                  disabled={addingToDiet}
+                  className={`w-full sm:flex-1 py-6 font-bold text-sm rounded-xl transition-all shadow-sm ${
+                    isSavedInDiet
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-[#FF6B35] hover:bg-[#E55A2B] text-white'
+                  }`}
+                >
+                  {addingToDiet ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Registrando...
+                    </>
+                  ) : isSavedInDiet ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" /> Adicionado à Dieta de Hoje
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="w-4 h-4 mr-2 fill-white" /> Adicionar à Minha Dieta
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="w-full sm:flex-1 py-6 font-bold text-sm rounded-xl bg-[#FF6B35] hover:bg-[#E55A2B] text-white transition-all shadow-sm"
+                >
+                  <Link to="/signup">
+                    <UserPlus className="w-4 h-4 mr-2" /> Cadastre-se para Salvar na Dieta
+                  </Link>
+                </Button>
+              )}
 
               <Button
                 asChild
@@ -302,13 +330,57 @@ export default function CatalogDetail() {
         </div>
       </div>
 
+      {/* Visitor Callout if deslogado */}
+      {!user && (
+        <div className="bg-amber-50/70 border border-amber-200 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-sm sm:text-base text-gray-900">
+                Quer saber se este item cabe na sua meta de hoje?
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Crie sua conta para que nosso algoritmo cruze o gasto calórico, sua meta de
+                macronutrientes e suas restrições de saúde antes de você pedir.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <Button
+              asChild
+              size="sm"
+              className="bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-xs h-9 px-4 rounded-xl"
+            >
+              <Link to="/signup">Criar Conta</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold text-xs h-9 px-3 rounded-xl"
+            >
+              <Link to="/login">Entrar</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Recommendations Highlight: MOMENTO & LUGAR (Sempre juntos) */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#FF6B35]" />
-          <h2 className="text-xl font-bold text-gray-900">
-            Recomendações Inteligentes: Momento & Lugar
-          </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#FF6B35]" />
+            <h2 className="text-xl font-bold text-gray-900">
+              Recomendações Inteligentes: Momento & Lugar
+            </h2>
+          </div>
+          {!user && (
+            <Badge variant="outline" className="border-orange-200 text-orange-700 text-[10px]">
+              Sugestão Padrão
+            </Badge>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

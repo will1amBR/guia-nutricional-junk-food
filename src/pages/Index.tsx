@@ -31,8 +31,23 @@ import { Badge } from '@/components/ui/badge'
 import { InitialCravingModal, type InitialCravingAnswers } from '@/components/InitialCravingModal'
 import { fetchAllUserFoodLogs } from '@/services/nutrition'
 import { calculateUserGamification, type UserGamificationStats } from '@/services/achievements'
-import { SlidersHorizontal, Trophy, Award, Utensils, X } from 'lucide-react'
+import {
+  SlidersHorizontal,
+  Trophy,
+  Award,
+  Utensils,
+  X,
+  BarChart3,
+  Bell,
+  CheckCircle2,
+} from 'lucide-react'
 import pb from '@/lib/pocketbase/client'
+import {
+  getClosedWeekInfo,
+  isWeeklyReportBannerDismissed,
+  dismissWeeklyReportBanner,
+  type ClosedWeekInfo,
+} from '@/services/weeklyReminder'
 
 export default function Index() {
   const { user, profile } = useAuth()
@@ -41,6 +56,11 @@ export default function Index() {
   const [todayExercises, setTodayExercises] = useState<ExercicioRegistro[]>([])
   const [allLogs, setAllLogs] = useState<RegistroAlimentar[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Weekly report reminder banner state
+  const [closedWeekInfo, setClosedWeekInfo] = useState<ClosedWeekInfo | null>(null)
+  const [closedWeekHasLogs, setClosedWeekHasLogs] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
   // Initial craving modal state (shown on entry, re-openable)
   const [cravingModalOpen, setCravingModalOpen] = useState(false)
@@ -59,6 +79,14 @@ export default function Index() {
   const loadData = async () => {
     if (!user) return
     try {
+      const weekInfo = getClosedWeekInfo()
+      setClosedWeekInfo(weekInfo)
+
+      const isDismissed = weekInfo
+        ? isWeeklyReportBannerDismissed(user.id, weekInfo.closedWeekKey)
+        : false
+      setBannerDismissed(isDismissed)
+
       const [catItems, logs, exercises, allUserLogs] = await Promise.all([
         fetchCatalogItems(),
         fetchDailyFoodLogs(user.id, todayStr),
@@ -69,6 +97,17 @@ export default function Index() {
       setTodayLogs(logs)
       setTodayExercises(exercises)
       setAllLogs(allUserLogs)
+
+      // Check if user has food logs in the closed week
+      if (weekInfo && allUserLogs.length > 0) {
+        const hasLogsInClosedWeek = allUserLogs.some((l) => {
+          const d = (l.data || '').split('T')[0]
+          return d >= weekInfo.startDateStr && d <= weekInfo.endDateStr
+        })
+        setClosedWeekHasLogs(hasLogsInClosedWeek)
+      } else {
+        setClosedWeekHasLogs(false)
+      }
 
       // Always show prompt on entry if not answered in this session yet
       const hasAnsweredSession = sessionStorage.getItem('junkfood_craving_session_prompted')
@@ -81,6 +120,12 @@ export default function Index() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDismissWeeklyBanner = () => {
+    if (!user || !closedWeekInfo) return
+    dismissWeeklyReportBanner(user.id, closedWeekInfo.closedWeekKey)
+    setBannerDismissed(true)
   }
 
   const handleApplyCraving = (answers: InitialCravingAnswers) => {
@@ -244,6 +289,56 @@ export default function Index() {
           </Button>
         </div>
       </div>
+
+      {/* Banner Lembrete de Fechamento de Semana (Domingo e Segunda) */}
+      {closedWeekInfo && closedWeekHasLogs && !bannerDismissed && (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-5 sm:p-6 shadow-lg border border-indigo-700/50 animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md text-amber-300 flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-indigo-950 font-extrabold text-[10px] uppercase px-2.5 py-0.5 rounded-full">
+                    <Bell className="w-3 h-3 fill-indigo-950" /> Fechamento Semanal
+                  </span>
+                  <span className="text-xs text-indigo-200">
+                    Semana de {closedWeekInfo.formattedRange}
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                  Sua semana fechou — confira seu relatório!
+                </h3>
+                <p className="text-xs sm:text-sm text-indigo-100 max-w-xl leading-relaxed">
+                  Você registrou refeições nesta semana que se encerrou. Veja a média de calorias,
+                  melhores escolhas proteicas e gere seu resumo para compartilhar no WhatsApp.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <Button
+                asChild
+                className="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-extrabold text-xs h-10 px-5 rounded-xl shadow-md gap-1.5"
+              >
+                <Link to="/report">
+                  Ver Relatório <ChevronRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDismissWeeklyBanner}
+                className="text-indigo-200 hover:text-white hover:bg-white/10 text-xs h-10 px-3 rounded-xl"
+                title="Dispensar lembrete desta semana"
+              >
+                Dispensar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Craving / Location Active Filter Banner */}
       {(cravingAnswers.craving ||

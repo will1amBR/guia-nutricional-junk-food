@@ -14,6 +14,9 @@ import {
   ShieldCheck,
   Plus,
   ArrowLeftRight,
+  Sparkles,
+  UserPlus,
+  Lock,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
@@ -102,17 +105,66 @@ export default function Catalog() {
           </p>
         </div>
 
-        {(user?.is_admin || user?.email === 'william@korenambiental.com') && (
-          <Button
-            asChild
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs self-start sm:self-auto gap-1.5"
-          >
-            <Link to="/admin">
-              <ShieldCheck className="w-4 h-4" /> Gerenciar Catálogo (Admin)
-            </Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {!user && (
+            <Button
+              asChild
+              className="bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-xs rounded-xl shadow-xs gap-1.5"
+            >
+              <Link to="/signup">
+                <UserPlus className="w-4 h-4" /> Cadastre-se grátis
+              </Link>
+            </Button>
+          )}
+
+          {(user?.is_admin || user?.email === 'william@korenambiental.com') && (
+            <Button
+              asChild
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs gap-1.5"
+            >
+              <Link to="/admin">
+                <ShieldCheck className="w-4 h-4" /> Gerenciar Catálogo (Admin)
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Public Visitor Banner CTA */}
+      {!user && (
+        <div className="bg-gradient-to-r from-orange-500 via-[#FF6B35] to-[#E55A2B] rounded-3xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-2 max-w-2xl">
+              <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-xs text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" /> Recomendações Personalizadas
+              </span>
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Cadastre-se para receber recomendações sob medida para sua saúde
+              </h2>
+              <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
+                Você pode explorar todo o catálogo livremente. Crie sua conta grátis para
+                desbloquear o cálculo de Momento & Lugar calibrado para suas metas de calorias,
+                restrições e condições de saúde.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <Button
+                asChild
+                className="bg-white hover:bg-orange-50 text-[#FF6B35] font-extrabold text-sm h-11 px-6 rounded-xl shadow-md"
+              >
+                <Link to="/signup">Criar Conta Grátis</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/40 text-white hover:bg-white/10 hover:text-white font-semibold text-sm h-11 px-4 rounded-xl"
+              >
+                <Link to="/login">Já tenho conta</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="space-y-4">
@@ -329,6 +381,37 @@ export default function Catalog() {
               >
                 Ver mais junk foods ({filteredAndSortedItems.length - displayCount} restantes)
               </Button>
+            </div>
+          )}
+
+          {/* Bottom Visitor CTA Card */}
+          {!user && (
+            <div className="mt-8 bg-white border border-orange-100 rounded-3xl p-8 sm:p-10 shadow-sm text-center space-y-4 max-w-3xl mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-[#FF6B35] flex items-center justify-center mx-auto shadow-inner">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+                Gostou do cardápio? Monte seu plano inteligente!
+              </h3>
+              <p className="text-sm text-gray-600 max-w-lg mx-auto">
+                Cadastre-se em segundos para registrar o que você comeu, acompanhar metas diárias,
+                gerar relatórios semanais e saber o momento ideal para cada junk food.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <Button
+                  asChild
+                  className="w-full sm:w-auto bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-sm px-6 py-5 rounded-xl shadow-sm"
+                >
+                  <Link to="/signup">Cadastrar Gratuitamente</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full sm:w-auto border-orange-200 text-gray-700 hover:bg-orange-50 text-sm py-5 rounded-xl"
+                >
+                  <Link to="/login">Entrar na minha conta</Link>
+                </Button>
+              </div>
             </div>
           )}
         </>

@@ -29,7 +29,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
-const baseNavLinks = [
+import { LogIn, UserPlus } from 'lucide-react'
+
+const authenticatedNavLinks = [
   { name: 'Início', path: '/app', icon: Home },
   { name: 'Catálogo', path: '/catalog', icon: BookOpen },
   { name: 'Comparador', path: '/compare', icon: ArrowLeftRight },
@@ -41,6 +43,12 @@ const baseNavLinks = [
   { name: 'Perfil', path: '/profile', icon: User },
 ]
 
+const guestNavLinks = [
+  { name: 'Início', path: '/', icon: Home },
+  { name: 'Catálogo', path: '/catalog', icon: BookOpen },
+  { name: 'Comparador', path: '/compare', icon: ArrowLeftRight },
+]
+
 export default function Layout() {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -49,8 +57,11 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navLinks = React.useMemo(() => {
-    const links = [...baseNavLinks]
-    if (user?.is_admin || user?.email === 'william@korenambiental.com') {
+    if (!user) {
+      return guestNavLinks
+    }
+    const links = [...authenticatedNavLinks]
+    if (user.is_admin || user.email === 'william@korenambiental.com') {
       links.push({ name: 'Admin', path: '/admin', icon: ShieldCheck })
     }
     return links
@@ -86,7 +97,7 @@ export default function Layout() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Brand Logo */}
-          <Link to="/app" className="flex items-center gap-2.5 group">
+          <Link to={user ? '/app' : '/'} className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#E55A2B] flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform duration-200">
               <Utensils className="w-5 h-5" />
             </div>
@@ -128,8 +139,8 @@ export default function Layout() {
 
           {/* User Avatar + Mobile Hamburger */}
           <div className="flex items-center gap-3">
-            {/* User Dropdown */}
-            {user && (
+            {/* User Dropdown or Guest CTAs */}
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2.5 p-1 rounded-full hover:bg-orange-50/80 transition-colors focus:outline-none">
@@ -184,6 +195,26 @@ export default function Layout() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="text-gray-700 hover:text-[#FF6B35] hover:bg-orange-50 font-semibold text-xs h-9 px-3 rounded-xl gap-1.5"
+                >
+                  <Link to="/login">
+                    <LogIn className="w-3.5 h-3.5" /> Entrar
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-sm gap-1.5"
+                >
+                  <Link to="/signup">
+                    <UserPlus className="w-3.5 h-3.5" /> Criar conta
+                  </Link>
+                </Button>
+              </div>
             )}
 
             {/* Mobile Menu Drawer */}
@@ -244,18 +275,40 @@ export default function Layout() {
                     </nav>
                   </div>
 
-                  {/* Mobile Footer & Logout */}
+                  {/* Mobile Footer & Logout / Guest CTAs */}
                   <div className="pt-6 border-t border-orange-100 space-y-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setMobileMenuOpen(false)
-                        handleLogout()
-                      }}
-                      className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center justify-center gap-2"
-                    >
-                      <LogOut className="w-4 h-4" /> Sair da Conta
-                    </Button>
+                    {user ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          handleLogout()
+                        }}
+                        className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center justify-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" /> Sair da Conta
+                      </Button>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          asChild
+                          className="w-full bg-[#FF6B35] hover:bg-[#E55A2B] text-white font-bold text-sm h-10 rounded-xl"
+                        >
+                          <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                            <UserPlus className="w-4 h-4 mr-2" /> Criar conta grátis
+                          </Link>
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold text-sm h-10 rounded-xl"
+                        >
+                          <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                            <LogIn className="w-4 h-4 mr-2" /> Entrar
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>
