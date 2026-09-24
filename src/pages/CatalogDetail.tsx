@@ -211,8 +211,20 @@ export default function CatalogDetail() {
       <div className="bg-white rounded-3xl overflow-hidden border border-orange-100 shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Image */}
-          <div className="relative h-64 md:h-full min-h-[300px] overflow-hidden bg-gray-100">
-            <img src={item.imagem} alt={item.nome} className="w-full h-full object-cover" />
+          <div className="relative h-64 md:h-full min-h-[300px] overflow-hidden bg-gradient-to-tr from-orange-100 to-amber-50">
+            <img
+              src={
+                item.imageUrl ||
+                item.imagem ||
+                'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+              }
+              alt={item.nome}
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).src =
+                  'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+              }}
+              className="w-full h-full object-cover"
+            />
             <div className="absolute top-4 left-4">
               <Badge
                 variant="outline"
@@ -397,8 +409,16 @@ export default function CatalogDetail() {
                 <div>
                   <div className="h-32 overflow-hidden bg-gray-100 relative">
                     <img
-                      src={similar.imagem}
+                      src={
+                        similar.imageUrl ||
+                        similar.imagem ||
+                        'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }
                       alt={similar.nome}
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute bottom-2 right-2">

@@ -216,10 +216,19 @@ export default function Catalog() {
                 >
                   <div>
                     {/* Image with Badges */}
-                    <div className="relative h-48 overflow-hidden bg-gray-100">
+                    <div className="relative h-48 overflow-hidden bg-gradient-to-tr from-orange-100 to-amber-50">
                       <img
-                        src={item.imagem}
+                        src={
+                          item.imageUrl ||
+                          item.imagem ||
+                          'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                        }
                         alt={item.nome}
+                        onError={(e) => {
+                          // Fallback to appetizing placeholder if image fails
+                          ;(e.target as HTMLImageElement).src =
+                            'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />

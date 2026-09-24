@@ -55,6 +55,7 @@ export interface CatalogItem {
   sodio_mg?: number
   fibra_g?: number
   imagem?: string
+  imageUrl?: string
   created?: string
   updated?: string
 }

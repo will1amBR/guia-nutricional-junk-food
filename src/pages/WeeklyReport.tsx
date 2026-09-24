@@ -347,8 +347,16 @@ export default function WeeklyReport() {
           {stats.bestChoice ? (
             <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-emerald-100 shadow-2xs">
               <img
-                src={stats.bestChoice.imagem}
+                src={
+                  stats.bestChoice.imageUrl ||
+                  stats.bestChoice.imagem ||
+                  'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }
                 alt={stats.bestChoice.nome}
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).src =
+                    'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }}
                 className="w-16 h-16 rounded-xl object-cover shrink-0"
               />
               <div className="space-y-1">
@@ -385,8 +393,16 @@ export default function WeeklyReport() {
           {stats.topConsumed[0] ? (
             <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-orange-100 shadow-2xs">
               <img
-                src={stats.topConsumed[0].item.imagem}
+                src={
+                  stats.topConsumed[0].item.imageUrl ||
+                  stats.topConsumed[0].item.imagem ||
+                  'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }
                 alt={stats.topConsumed[0].item.nome}
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).src =
+                    'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }}
                 className="w-16 h-16 rounded-xl object-cover shrink-0"
               />
               <div className="space-y-1">
@@ -442,8 +458,16 @@ export default function WeeklyReport() {
                 <div key={log.id} className="py-3.5 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={food.imagem}
+                      src={
+                        food.imageUrl ||
+                        food.imagem ||
+                        'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }
                       alt={food.nome}
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }}
                       className="w-12 h-12 rounded-xl object-cover shrink-0"
                     />
                     <div>

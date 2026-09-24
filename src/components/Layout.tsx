@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Bot,
   BarChart3,
+  Award,
   ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ const baseNavLinks = [
   { name: 'Assistente', path: '/assistant', icon: Bot },
   { name: 'Minha Dieta', path: '/diet', icon: CalendarDays },
   { name: 'Relatório', path: '/report', icon: BarChart3 },
+  { name: 'Conquistas', path: '/achievements', icon: Award },
   { name: 'Perfil', path: '/profile', icon: User },
 ]
 

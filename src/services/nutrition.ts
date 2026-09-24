@@ -128,3 +128,12 @@ export async function fetchWeeklyFoodLogs(
   })
   return records
 }
+
+export async function fetchAllUserFoodLogs(userId: string): Promise<RegistroAlimentar[]> {
+  const records = await pb.collection('registros_alimentares').getFullList<RegistroAlimentar>({
+    filter: `usuario = "${userId}"`,
+    sort: '-data,-created',
+    expand: 'alimento',
+  })
+  return records
+}

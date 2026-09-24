@@ -20,31 +20,74 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { InitialCravingModal, type InitialCravingAnswers } from '@/components/InitialCravingModal'
+import { fetchAllUserFoodLogs } from '@/services/nutrition'
+import { calculateUserGamification, type UserGamificationStats } from '@/services/achievements'
+import { SlidersHorizontal, Trophy, Award, Utensils, X } from 'lucide-react'
 import pb from '@/lib/pocketbase/client'
 
 export default function Index() {
   const { user, profile } = useAuth()
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [todayLogs, setTodayLogs] = useState<RegistroAlimentar[]>([])
+  const [allLogs, setAllLogs] = useState<RegistroAlimentar[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Initial craving modal state (shown on entry, re-openable)
+  const [cravingModalOpen, setCravingModalOpen] = useState(false)
+  const [cravingAnswers, setCravingAnswers] = useState<InitialCravingAnswers>(() => {
+    try {
+      const saved = sessionStorage.getItem('junkfood_craving_answers')
+      if (saved) return JSON.parse(saved)
+    } catch {
+      /* intentionally ignored */
+    }
+    return { craving: '', location: 'todos' }
+  })
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
   const loadData = async () => {
     if (!user) return
     try {
-      const [catItems, logs] = await Promise.all([
+      const [catItems, logs, allUserLogs] = await Promise.all([
         fetchCatalogItems(),
         fetchDailyFoodLogs(user.id, todayStr),
+        fetchAllUserFoodLogs(user.id),
       ])
       setCatalog(catItems)
       setTodayLogs(logs)
+      setAllLogs(allUserLogs)
+
+      // Always show prompt on entry if not answered in this session yet
+      const hasAnsweredSession = sessionStorage.getItem('junkfood_craving_session_prompted')
+      if (!hasAnsweredSession) {
+        setCravingModalOpen(true)
+        sessionStorage.setItem('junkfood_craving_session_prompted', 'true')
+      }
     } catch (err) {
       console.error('Erro ao carregar dados do dashboard:', err)
     } finally {
       setLoading(false)
     }
   }
+
+  const handleApplyCraving = (answers: InitialCravingAnswers) => {
+    setCravingAnswers(answers)
+    try {
+      sessionStorage.setItem('junkfood_craving_answers', JSON.stringify(answers))
+    } catch {
+      /* intentionally ignored */
+    }
+  }
+
+  const availablePlaces = useMemo(() => {
+    const set = new Set<string>()
+    catalog.forEach((item) => {
+      if (item.estabelecimento) set.add(item.estabelecimento)
+    })
+    return Array.from(set).sort()
+  }, [catalog])
 
   useEffect(() => {
     loadData()
@@ -65,10 +108,44 @@ export default function Index() {
 
   const totals = useMemo(() => calculateDailyTotals(todayLogs), [todayLogs])
 
+  // Gamification & streak stats
+  const gamificationStats = useMemo(() => {
+    return calculateUserGamification(allLogs, profile)
+  }, [allLogs, profile])
+
+  // Recommendations filtered by user craving & location
   const recommendations = useMemo(() => {
     if (!catalog.length) return []
-    return rankCatalogRecommendations(catalog, profile, todayLogs)
-  }, [catalog, profile, todayLogs])
+    let baseList = catalog
+
+    // Filter by location if selected and not 'todos'
+    if (
+      cravingAnswers.location &&
+      cravingAnswers.location !== 'todos' &&
+      cravingAnswers.location !== 'casa'
+    ) {
+      baseList = baseList.filter(
+        (c) => c.estabelecimento.toLowerCase() === cravingAnswers.location.toLowerCase(),
+      )
+    }
+
+    // Filter or boost by craving keyword
+    if (cravingAnswers.craving) {
+      const q = cravingAnswers.craving.toLowerCase()
+      const matching = baseList.filter(
+        (c) =>
+          c.nome.toLowerCase().includes(q) ||
+          c.categoria.toLowerCase().includes(q) ||
+          c.estabelecimento.toLowerCase().includes(q),
+      )
+      if (matching.length > 0) {
+        baseList = matching
+      }
+    }
+
+    // Rank list with moment + place algorithm
+    return rankCatalogRecommendations(baseList, profile, todayLogs)
+  }, [catalog, profile, todayLogs, cravingAnswers])
 
   const topJunkFood = recommendations[0] || null
 
@@ -118,12 +195,99 @@ export default function Index() {
             </span>
           </p>
         </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            onClick={() => setCravingModalOpen(true)}
+            className="border-orange-200 text-gray-700 hover:bg-orange-50 font-semibold text-xs h-9 gap-1.5"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF6B35]" /> Mudar desejo/local
+          </Button>
+
+          <Button
+            asChild
+            className="bg-[#2EC4B6] hover:bg-[#25A89B] text-white text-xs h-9 shadow-sm"
+          >
+            <Link to="/diet" className="flex items-center gap-1.5">
+              <CalendarCheck className="w-3.5 h-3.5" /> Registrar Refeição
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Craving / Location Active Filter Banner */}
+      {(cravingAnswers.craving ||
+        (cravingAnswers.location && cravingAnswers.location !== 'todos')) && (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 text-xs text-gray-800">
+            <Sparkles className="w-4 h-4 text-[#FF6B35] shrink-0" />
+            <span>
+              Filtrando recomendações para:{' '}
+              {cravingAnswers.craving && (
+                <strong className="text-[#FF6B35] font-bold">"{cravingAnswers.craving}"</strong>
+              )}
+              {cravingAnswers.craving && cravingAnswers.location !== 'todos' && ' em '}
+              {cravingAnswers.location !== 'todos' && (
+                <strong className="text-teal-700 font-bold">
+                  {cravingAnswers.location === 'casa'
+                    ? 'Em casa / Delivery'
+                    : cravingAnswers.location}
+                </strong>
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleApplyCraving({ craving: '', location: 'todos' })}
+              className="text-[11px] h-7 px-2 text-gray-500 hover:text-red-600 gap-1"
+            >
+              <X className="w-3 h-3" /> Limpar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCravingModalOpen(true)}
+              className="text-[11px] h-7 px-2.5 border-orange-300 text-orange-800 hover:bg-orange-100/70"
+            >
+              Alterar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Streak & Achievements mini banner */}
+      <div className="bg-white border border-orange-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF6B35] to-[#E55A2B] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Flame className="w-6 h-6 fill-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-base text-gray-900">
+                Streak: {gamificationStats.currentStreakWeeks}{' '}
+                {gamificationStats.currentStreakWeeks === 1 ? 'semana seguida' : 'semanas seguidas'}
+              </span>
+              <Badge className="bg-amber-100 text-amber-800 text-[10px] font-bold border-amber-200">
+                Em dia
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {gamificationStats.totalCaloriesLogged.toLocaleString('pt-BR')} kcal rastreadas •{' '}
+              {gamificationStats.achievements.filter((a) => a.unlocked).length} conquistas
+              desbloqueadas
+            </p>
+          </div>
+        </div>
+
         <Button
           asChild
-          className="bg-[#2EC4B6] hover:bg-[#25A89B] text-white self-start sm:self-auto shadow-sm"
+          variant="outline"
+          className="border-orange-200 text-gray-700 hover:bg-orange-50 text-xs font-semibold h-9 rounded-xl gap-1.5 self-start sm:self-auto"
         >
-          <Link to="/diet" className="flex items-center gap-2">
-            <CalendarCheck className="w-4 h-4" /> Registrar Refeição
+          <Link to="/achievements">
+            <Trophy className="w-4 h-4 text-amber-500" /> Ver Minhas Conquistas
           </Link>
         </Button>
       </div>
@@ -284,8 +448,16 @@ export default function Index() {
               <div>
                 <div className="relative h-40 overflow-hidden bg-gray-100">
                   <img
-                    src={rec.item.imagem}
+                    src={
+                      rec.item.imageUrl ||
+                      rec.item.imagem ||
+                      'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                    }
                     alt={rec.item.nome}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src =
+                        'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
@@ -396,23 +568,32 @@ export default function Index() {
           </Link>
 
           <Link
-            to="/profile"
+            to="/achievements"
             className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-3.5 hover:-translate-y-0.5"
           >
-            <div className="w-11 h-11 rounded-xl bg-teal-100 text-[#2EC4B6] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <UserCheck className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 group-hover:text-[#2EC4B6] transition-colors">
-                Minha Dieta
+              <h3 className="font-bold text-gray-900 group-hover:text-amber-600 transition-colors">
+                Streak & Conquistas
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Ajuste restrições, condições e metas de calorias e macros.
+                Acompanhe semanas consecutivas e marcos de calorias acumuladas.
               </p>
             </div>
           </Link>
         </div>
       </section>
+
+      {/* Initial Craving Onboarding Modal */}
+      <InitialCravingModal
+        open={cravingModalOpen}
+        onOpenChange={setCravingModalOpen}
+        onApply={handleApplyCraving}
+        currentAnswers={cravingAnswers}
+        availablePlaces={availablePlaces}
+      />
     </div>
   )
 }

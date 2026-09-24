@@ -444,8 +444,16 @@ export default function Diet() {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0">
                               <img
-                                src={food.imagem}
+                                src={
+                                  food.imageUrl ||
+                                  food.imagem ||
+                                  'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                                }
                                 alt={food.nome}
+                                onError={(e) => {
+                                  ;(e.target as HTMLImageElement).src =
+                                    'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                                }}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -518,8 +526,16 @@ export default function Diet() {
                     >
                       <div className="flex items-center gap-2.5">
                         <img
-                          src={rec.item.imagem}
+                          src={
+                            rec.item.imageUrl ||
+                            rec.item.imagem ||
+                            'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                          }
                           alt={rec.item.nome}
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).src =
+                              'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                          }}
                           className="w-10 h-10 rounded-md object-cover"
                         />
                         <div>
@@ -561,8 +577,16 @@ export default function Diet() {
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={food.imagem}
+                      src={
+                        food.imageUrl ||
+                        food.imagem ||
+                        'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }
                       alt={food.nome}
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }}
                       className="w-11 h-11 rounded-lg object-cover"
                     />
                     <div>

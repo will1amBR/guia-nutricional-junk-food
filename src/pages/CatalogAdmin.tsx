@@ -66,7 +66,8 @@ const DEFAULT_ITEM_FORM: Omit<CatalogItem, 'id' | 'created' | 'updated'> = {
   acucar_g: 5,
   sodio_mg: 800,
   fibra_g: 2,
-  imagem: 'https://img.usecurling.com/p/800/600?q=fast%20food',
+  imagem: 'https://img.usecurling.com/p/800/600?q=delicious%20burger%20fast%20food&color=warm',
+  imageUrl: 'https://img.usecurling.com/p/800/600?q=delicious%20burger%20fast%20food&color=warm',
 }
 
 export default function CatalogAdmin() {
@@ -153,7 +154,14 @@ export default function CatalogAdmin() {
       acucar_g: item.acucar_g || 0,
       sodio_mg: item.sodio_mg || 0,
       fibra_g: item.fibra_g || 0,
-      imagem: item.imagem || 'https://img.usecurling.com/p/800/600?q=fast%20food',
+      imagem:
+        item.imageUrl ||
+        item.imagem ||
+        'https://img.usecurling.com/p/800/600?q=delicious%20burger%20fast%20food&color=warm',
+      imageUrl:
+        item.imageUrl ||
+        item.imagem ||
+        'https://img.usecurling.com/p/800/600?q=delicious%20burger%20fast%20food&color=warm',
     })
     setIsModalOpen(true)
   }
@@ -293,8 +301,16 @@ export default function CatalogAdmin() {
               >
                 <div className="flex items-center gap-3.5">
                   <img
-                    src={item.imagem}
+                    src={
+                      item.imageUrl ||
+                      item.imagem ||
+                      'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                    }
                     alt={item.nome}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src =
+                        'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                    }}
                     className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-orange-100"
                   />
                   <div className="space-y-1">
@@ -515,14 +531,34 @@ export default function CatalogAdmin() {
 
             <div className="space-y-1.5">
               <Label htmlFor="imagem" className="text-xs font-bold">
-                URL da Imagem (UseCurling CDN)
+                URL da Imagem / Foto do Produto (UseCurling CDN ou URL pública)
               </Label>
               <Input
                 id="imagem"
                 placeholder="https://img.usecurling.com/p/800/600?q=..."
-                value={formData.imagem}
-                onChange={(e) => setFormData({ ...formData, imagem: e.target.value })}
+                value={formData.imageUrl || formData.imagem || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, imagem: e.target.value, imageUrl: e.target.value })
+                }
               />
+              {formData.imagem && (
+                <div className="flex items-center gap-3 pt-2">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden border border-orange-200 shrink-0">
+                    <img
+                      src={formData.imagem}
+                      alt="Prévia"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    Pré-visualização da foto real do alimento
+                  </span>
+                </div>
+              )}
             </div>
 
             <DialogFooter className="pt-4 gap-2">

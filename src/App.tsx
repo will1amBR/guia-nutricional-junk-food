@@ -19,6 +19,7 @@ import Diet from './pages/Diet'
 import Profile from './pages/Profile'
 import AssistantChat from './pages/AssistantChat'
 import WeeklyReport from './pages/WeeklyReport'
+import Achievements from './pages/Achievements'
 import CatalogAdmin from './pages/CatalogAdmin'
 
 // Public auth pages
@@ -58,7 +59,8 @@ const App = () => (
               <Route path="/assistant" element={<AssistantChat />} />
               <Route path="/diet" element={<Diet />} />
               <Route path="/report" element={<WeeklyReport />} />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/achievements" element={<Achievements />} />
+              <Route path="/profile" element={<Profile />} />{' '}
               <Route path="/admin" element={<CatalogAdmin />} />
             </Route>
           </Route>

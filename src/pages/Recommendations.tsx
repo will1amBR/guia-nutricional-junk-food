@@ -144,8 +144,16 @@ export default function Recommendations() {
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 shrink-0 relative">
               <img
-                src={rec.item.imagem}
+                src={
+                  rec.item.imageUrl ||
+                  rec.item.imagem ||
+                  'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }
                 alt={rec.item.nome}
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).src =
+                    'https://img.usecurling.com/p/800/600?q=delicious%20fast%20food'
+                }}
                 className="w-full h-full object-cover"
               />
               <span className="absolute bottom-1 right-1 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
