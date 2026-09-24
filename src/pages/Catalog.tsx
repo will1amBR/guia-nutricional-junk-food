@@ -2,7 +2,19 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchCatalogItems } from '@/services/nutrition'
 import type { CatalogItem, CategoriaAlimento } from '@/types'
-import { Search, X, MapPin, Flame, ArrowUpDown, ChevronRight, Filter, Loader2 } from 'lucide-react'
+import {
+  Search,
+  X,
+  MapPin,
+  Flame,
+  ArrowUpDown,
+  ChevronRight,
+  Filter,
+  Loader2,
+  ShieldCheck,
+  Plus,
+} from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +48,7 @@ export const CATEGORY_COLORS: Record<CategoriaAlimento, string> = {
 }
 
 export default function Catalog() {
+  const { user } = useAuth()
   const [items, setItems] = useState<CatalogItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -77,13 +90,27 @@ export default function Catalog() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="space-y-1 pb-4 border-b border-orange-100/60">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-          Catálogo de Junk Foods
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Tabela nutricional completa para suas escolhas com precisão e consciência.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-orange-100/60">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            Catálogo de Junk Foods
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600">
+            Tabela nutricional completa com McDonald's, BK, KFC, Outback, Subway, Pizza Hut e
+            feiras.
+          </p>
+        </div>
+
+        {(user?.is_admin || user?.email === 'william@korenambiental.com') && (
+          <Button
+            asChild
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs self-start sm:self-auto gap-1.5"
+          >
+            <Link to="/admin">
+              <ShieldCheck className="w-4 h-4" /> Gerenciar Catálogo (Admin)
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}

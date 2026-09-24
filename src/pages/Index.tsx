@@ -343,17 +343,51 @@ export default function Index() {
       {/* Seção: Acesso Rápido */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-gray-900 tracking-tight">Acesso rápido</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Link
-            to="/catalog"
-            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-4 hover:-translate-y-0.5"
+            to="/assistant"
+            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-3.5 hover:-translate-y-0.5"
           >
-            <div className="w-12 h-12 rounded-xl bg-orange-100 text-[#FF6B35] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#E55A2B] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 group-hover:text-[#FF6B35] transition-colors">
-                Ver Catálogo Completo
+                Assistente de IA
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Tire dúvidas instantâneas: "Posso comer Whopper hoje?".
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/report"
+            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-3.5 hover:-translate-y-0.5"
+          >
+            <div className="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <CalendarCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                Relatório Semanal
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Veja seu progresso dos últimos 7 dias e compartilhe no WhatsApp.
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/catalog"
+            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-3.5 hover:-translate-y-0.5"
+          >
+            <div className="w-11 h-11 rounded-xl bg-orange-100 text-[#FF6B35] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 group-hover:text-[#FF6B35] transition-colors">
+                Ver Catálogo
               </h3>
               <p className="text-xs text-gray-500 mt-1">
                 Tabela nutricional completa com filtros por categoria e estabelecimento.
@@ -363,34 +397,17 @@ export default function Index() {
 
           <Link
             to="/profile"
-            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-4 hover:-translate-y-0.5"
+            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-3.5 hover:-translate-y-0.5"
           >
-            <div className="w-12 h-12 rounded-xl bg-teal-100 text-[#2EC4B6] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <UserCheck className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-teal-100 text-[#2EC4B6] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <UserCheck className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 group-hover:text-[#2EC4B6] transition-colors">
-                Atualizar Minha Dieta
+                Minha Dieta
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Ajuste suas restrições, condições de saúde e metas de calorias e macros.
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            to="/recommendations"
-            className="group bg-white p-5 rounded-2xl border border-orange-100 hover:border-orange-300 shadow-sm hover:shadow-md transition-all flex items-start gap-4 hover:-translate-y-0.5"
-          >
-            <div className="w-12 h-12 rounded-xl bg-amber-100 text-[#F59E0B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 group-hover:text-[#F59E0B] transition-colors">
-                Ver Recomendações
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Sugestões organizadas por Momento do Dia e agrupadas por Estabelecimento.
+                Ajuste restrições, condições e metas de calorias e macros.
               </p>
             </div>
           </Link>

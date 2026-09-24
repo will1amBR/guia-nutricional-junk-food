@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: u.email,
           name: u.name || (u.email ? u.email.split('@')[0] : 'Usuário'),
           avatar: u.avatar ? pb.files.getURL(u, u.avatar) : undefined,
+          is_admin: !!(u.is_admin || u.email === 'william@korenambiental.com'),
         }
         setUser(currentUser)
 

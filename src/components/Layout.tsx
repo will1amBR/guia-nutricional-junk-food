@@ -12,6 +12,9 @@ import {
   Menu,
   X,
   ChevronDown,
+  Bot,
+  BarChart3,
+  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,11 +27,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
-const navLinks = [
-  { name: 'Início', path: '/', icon: Home },
+const baseNavLinks = [
+  { name: 'Início', path: '/app', icon: Home },
   { name: 'Catálogo', path: '/catalog', icon: BookOpen },
   { name: 'Recomendações', path: '/recommendations', icon: Sparkles },
+  { name: 'Assistente', path: '/assistant', icon: Bot },
   { name: 'Minha Dieta', path: '/diet', icon: CalendarDays },
+  { name: 'Relatório', path: '/report', icon: BarChart3 },
   { name: 'Perfil', path: '/profile', icon: User },
 ]
 
@@ -38,6 +43,14 @@ export default function Layout() {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const navLinks = React.useMemo(() => {
+    const links = [...baseNavLinks]
+    if (user?.is_admin || user?.email === 'william@korenambiental.com') {
+      links.push({ name: 'Admin', path: '/admin', icon: ShieldCheck })
+    }
+    return links
+  }, [user])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -69,7 +82,7 @@ export default function Layout() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/app" className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#E55A2B] flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform duration-200">
               <Utensils className="w-5 h-5" />
             </div>
@@ -88,8 +101,8 @@ export default function Layout() {
             {navLinks.map((link) => {
               const Icon = link.icon
               const isActive =
-                link.path === '/'
-                  ? location.pathname === '/'
+                link.path === '/app'
+                  ? location.pathname === '/app'
                   : location.pathname.startsWith(link.path)
 
               return (
@@ -203,8 +216,8 @@ export default function Layout() {
                       {navLinks.map((link) => {
                         const Icon = link.icon
                         const isActive =
-                          link.path === '/'
-                            ? location.pathname === '/'
+                          link.path === '/app'
+                            ? location.pathname === '/app'
                             : location.pathname.startsWith(link.path)
                         return (
                           <Link

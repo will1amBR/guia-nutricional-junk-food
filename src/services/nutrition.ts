@@ -92,3 +92,39 @@ export async function removeFoodLog(logId: string): Promise<boolean> {
   await pb.collection('registros_alimentares').delete(logId)
   return true
 }
+
+export async function createCatalogItem(
+  data: Omit<CatalogItem, 'id' | 'created' | 'updated'>,
+): Promise<CatalogItem> {
+  const record = await pb.collection('catalog').create<CatalogItem>(data)
+  return record
+}
+
+export async function updateCatalogItem(
+  id: string,
+  data: Partial<Omit<CatalogItem, 'id' | 'created' | 'updated'>>,
+): Promise<CatalogItem> {
+  const record = await pb.collection('catalog').update<CatalogItem>(id, data)
+  return record
+}
+
+export async function deleteCatalogItem(id: string): Promise<boolean> {
+  await pb.collection('catalog').delete(id)
+  return true
+}
+
+export async function fetchWeeklyFoodLogs(
+  userId: string,
+  startDateStr: string,
+  endDateStr: string,
+): Promise<RegistroAlimentar[]> {
+  const start = `${startDateStr} 00:00:00.000Z`
+  const end = `${endDateStr} 23:59:59.999Z`
+
+  const records = await pb.collection('registros_alimentares').getFullList<RegistroAlimentar>({
+    filter: `usuario = "${userId}" && data >= "${start}" && data <= "${end}"`,
+    sort: '-data,-created',
+    expand: 'alimento',
+  })
+  return records
+}

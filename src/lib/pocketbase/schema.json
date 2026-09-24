@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T03:38:52.516Z",
+  "generatedAt": "2026-09-24T03:53:08.051Z",
   "collections": [
     {
       "name": "users",
@@ -37,6 +37,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "is_admin",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -48,11 +54,11 @@
       "name": "catalog",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": null,
-        "update": null,
-        "delete": null
+        "list": "",
+        "view": "",
+        "create": "@request.auth.id != '' && @request.auth.is_admin = true",
+        "update": "@request.auth.id != '' && @request.auth.is_admin = true",
+        "delete": "@request.auth.id != '' && @request.auth.is_admin = true"
       },
       "fields": [
         {

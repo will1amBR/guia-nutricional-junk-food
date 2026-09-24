@@ -65,7 +65,7 @@ export default function Signup() {
         title: 'Conta criada com sucesso!',
         description: 'Você já pode fazer login com suas credenciais.',
       })
-      navigate('/login')
+      navigate('/app')
     } catch (err: unknown) {
       console.error('Signup error:', err)
       setError('Não foi possível criar a conta. Este email pode já estar em uso.')

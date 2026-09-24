@@ -91,6 +91,7 @@ export interface UserAuth {
   email: string
   name: string
   avatar?: string
+  is_admin?: boolean
 }
 
 export interface RecommendationResult {

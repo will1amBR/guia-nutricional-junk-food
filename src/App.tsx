@@ -9,13 +9,17 @@ import { RequireAuth } from '@/components/RequireAuth'
 // Authenticated layout
 import Layout from './components/Layout'
 
-// Authenticated pages
+// Landing Page & Authenticated pages
+import LandingPage from './pages/LandingPage'
 import Index from './pages/Index'
 import Catalog from './pages/Catalog'
 import CatalogDetail from './pages/CatalogDetail'
 import Recommendations from './pages/Recommendations'
 import Diet from './pages/Diet'
 import Profile from './pages/Profile'
+import AssistantChat from './pages/AssistantChat'
+import WeeklyReport from './pages/WeeklyReport'
+import CatalogAdmin from './pages/CatalogAdmin'
 
 // Public auth pages
 import Login from './pages/Login'
@@ -33,7 +37,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
-          {/* Public routes */}
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Public auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -44,12 +51,15 @@ const App = () => (
           {/* Protected routes wrapped by RequireAuth + Layout */}
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
+              <Route path="/app" element={<Index />} />
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/catalog/:id" element={<CatalogDetail />} />
               <Route path="/recommendations" element={<Recommendations />} />
+              <Route path="/assistant" element={<AssistantChat />} />
               <Route path="/diet" element={<Diet />} />
+              <Route path="/report" element={<WeeklyReport />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<CatalogAdmin />} />
             </Route>
           </Route>
 
