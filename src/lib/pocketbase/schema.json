@@ -1,0 +1,335 @@
+{
+  "generatedAt": "2026-09-24T03:38:52.516Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "catalog",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "categoria",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "Hamburguer",
+            "Pizza",
+            "Sanduiche",
+            "Fritura",
+            "Doce",
+            "Bebida",
+            "Outros"
+          ]
+        },
+        {
+          "name": "estabelecimento",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "calorias",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "proteina_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "carboidrato_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gordura_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gordura_saturada_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gordura_trans_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "acucar_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "sodio_mg",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "fibra_g",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "imagem",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_catalog_categoria ON catalog (categoria)",
+        "CREATE INDEX idx_catalog_calorias ON catalog (calorias)",
+        "CREATE INDEX idx_catalog_estabelecimento ON catalog (estabelecimento)"
+      ]
+    },
+    {
+      "name": "perfis",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "usuario",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "dieta_atual",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Onivora",
+            "Vegetariana",
+            "Vegana",
+            "LowCarb",
+            "Cetogenica",
+            "SemRestricao"
+          ]
+        },
+        {
+          "name": "restricoes",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "SemGluten",
+            "SemLactose",
+            "SemFrutosDoMar",
+            "IntoleranciaLactose",
+            "AlergiaAmendoim",
+            "AlergiaSoja"
+          ]
+        },
+        {
+          "name": "condicoes",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Hipertensao",
+            "DiabetesTipo1",
+            "DiabetesTipo2",
+            "ColesterolAlto",
+            "DoencaRenal",
+            "Obesidade",
+            "Nenhuma"
+          ]
+        },
+        {
+          "name": "meta_calorias",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "meta_proteina_pct",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "meta_carboidrato_pct",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "meta_gordura_pct",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_perfis_usuario ON perfis (usuario)"]
+    },
+    {
+      "name": "registros_alimentares",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "usuario",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "alimento",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "catalog"
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "refeicao",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "CafeDaManha",
+            "LancheDaManha",
+            "Almoco",
+            "LancheDaTarde",
+            "Jantar",
+            "Ceia"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_registros_usuario ON registros_alimentares (usuario)",
+        "CREATE INDEX idx_registros_data ON registros_alimentares (data)",
+        "CREATE INDEX idx_registros_refeicao ON registros_alimentares (refeicao)"
+      ]
+    }
+  ]
+}
