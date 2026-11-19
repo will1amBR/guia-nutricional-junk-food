@@ -63,6 +63,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
+import WeeklyTrainingGoal from '@/components/WeeklyTrainingGoal'
 
 const MEAL_SLOTS: RefeicaoTipo[] = [
   'CafeDaManha',
@@ -531,6 +532,9 @@ export default function Diet() {
           </div>
         </div>
       </div>
+
+      {/* Meta Semanal de Treino Section */}
+      <WeeklyTrainingGoal />
 
       {/* Exercícios do Dia Section */}
       <section className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm space-y-4">

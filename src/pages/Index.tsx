@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { fetchActiveTrainingGoal, fetchWeeklyExercises } from '@/services/training'
 import { fetchCatalogItems, fetchDailyFoodLogs } from '@/services/nutrition'
 import { fetchDailyExercises, calculateDailyExerciseTotals } from '@/services/exercise'
 import { calculateDailyTotals, rankCatalogRecommendations } from '@/services/recommendations'
@@ -9,6 +10,7 @@ import type {
   RegistroAlimentar,
   RecommendationResult,
   ExercicioRegistro,
+  MetaTreino,
 } from '@/types'
 import {
   Flame,
@@ -182,6 +184,35 @@ export default function Index() {
   const gamificationStats = useMemo(() => {
     return calculateUserGamification(allLogs, profile)
   }, [allLogs, profile])
+
+  // Meta semanal de treino
+  const [trainingGoal, setTrainingGoal] = useState<MetaTreino | null>(null)
+  const [weeklyExercises, setWeeklyExercises] = useState<ExercicioRegistro[]>([])
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    fetchActiveTrainingGoal(user.id)
+      .then((g) => {
+        if (!cancelled) setTrainingGoal(g)
+      })
+      .catch(console.error)
+    fetchWeeklyExercises(user.id)
+      .then((ex) => {
+        if (!cancelled) setWeeklyExercises(ex)
+      })
+      .catch(console.error)
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  const trainingPct = useMemo(() => {
+    if (!trainingGoal) return 0
+    const minutes = weeklyExercises.reduce((acc, e) => acc + (e.duracao_min || 0), 0)
+    const calories = weeklyExercises.reduce((acc, e) => acc + (e.calorias_queimadas || 0), 0)
+    const current = trainingGoal.tipo_objetivo === 'calorias' ? calories : minutes
+    return Math.min(100, Math.round((current / (trainingGoal.valor_alvo || 1)) * 100))
+  }, [trainingGoal, weeklyExercises])
 
   // Recommendations filtered by user craving & location
   const recommendations = useMemo(() => {
@@ -382,7 +413,7 @@ export default function Index() {
         </div>
       )}
 
-      {/* Streak & Achievements mini banner */}
+      {/* Streak & Achievements mini banner (com progresso do treino da semana) */}
       <div className="bg-white border border-orange-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF6B35] to-[#E55A2B] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -403,6 +434,15 @@ export default function Index() {
               {gamificationStats.achievements.filter((a) => a.unlocked).length} conquistas
               desbloqueadas
             </p>
+            {trainingGoal && (
+              <div className="mt-2 flex items-center gap-2 max-w-xs">
+                <Dumbbell className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                <Progress value={trainingPct} className="h-1.5 bg-teal-100 flex-1" />
+                <span className="text-[10px] font-bold text-teal-700 whitespace-nowrap">
+                  {trainingPct}% do treino semanal
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

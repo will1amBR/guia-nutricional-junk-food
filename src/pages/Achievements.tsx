@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchAllUserFoodLogs } from '@/services/nutrition'
 import { calculateUserGamification, type UserGamificationStats } from '@/services/achievements'
-import type { RegistroAlimentar } from '@/types'
+import { fetchActiveTrainingGoal, fetchWeeklyExercises } from '@/services/training'
+import type { ExercicioRegistro, MetaTreino, RegistroAlimentar } from '@/types'
 import {
+  Dumbbell,
   Trophy,
   Flame,
   Award,
@@ -34,6 +36,8 @@ export default function Achievements() {
   const [logs, setLogs] = useState<RegistroAlimentar[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<UserGamificationStats | null>(null)
+  const [trainingGoal, setTrainingGoal] = useState<MetaTreino | null>(null)
+  const [weeklyExercises, setWeeklyExercises] = useState<ExercicioRegistro[]>([])
 
   const loadData = async () => {
     if (!user) return
@@ -42,6 +46,8 @@ export default function Achievements() {
       setLogs(allLogs)
       const calculated = calculateUserGamification(allLogs, profile)
       setStats(calculated)
+      fetchActiveTrainingGoal(user.id).then(setTrainingGoal).catch(console.error)
+      fetchWeeklyExercises(user.id).then(setWeeklyExercises).catch(console.error)
 
       // Alert if any new achievement unlocked
       if (calculated.newlyUnlocked.length > 0) {
@@ -90,6 +96,14 @@ export default function Achievements() {
   const unlockedCount = stats.achievements.filter((a) => a.unlocked).length
   const totalCount = stats.achievements.length
   const overallPct = Math.round((unlockedCount / totalCount) * 100)
+
+  // Progresso da meta semanal de treino
+  const weeklyMinutes = weeklyExercises.reduce((acc, e) => acc + (e.duracao_min || 0), 0)
+  const weeklyCalories = weeklyExercises.reduce((acc, e) => acc + (e.calorias_queimadas || 0), 0)
+  const weeklyCurrent = trainingGoal?.tipo_objetivo === 'calorias' ? weeklyCalories : weeklyMinutes
+  const weeklyPct = trainingGoal
+    ? Math.min(100, Math.round((weeklyCurrent / (trainingGoal.valor_alvo || 1)) * 100))
+    : 0
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
@@ -164,6 +178,63 @@ export default function Achievements() {
           <Progress value={overallPct} className="h-2.5 bg-orange-100" />
         </div>
       </div>
+
+      {/* Treinos da Semana — meta semanal de treino */}
+      {trainingGoal && (
+        <div className="bg-gradient-to-tr from-teal-50 via-emerald-50/60 to-white rounded-3xl p-6 border border-teal-200 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                <Dumbbell className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-gray-900 text-base">Treinos da Semana</h2>
+                <p className="text-xs text-gray-500">
+                  Progresso da sua meta semanal de treino — movimento que sustenta o streak.
+                </p>
+              </div>
+            </div>
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-bold shrink-0 self-start sm:self-auto ${
+                weeklyPct >= 100
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-teal-50 text-teal-800 border-teal-200'
+              }`}
+            >
+              {weeklyPct >= 100 ? 'Meta batida! 🎉' : `${weeklyPct}% da meta`}
+            </Badge>
+          </div>
+
+          <div className="flex justify-between text-xs font-bold text-gray-600">
+            <span>
+              {weeklyMinutes} min • {weeklyCalories} kcal queimadas
+            </span>
+            <span>
+              Meta:{' '}
+              {trainingGoal.tipo_objetivo === 'calorias'
+                ? `${trainingGoal.valor_alvo} kcal`
+                : `${trainingGoal.valor_alvo} min`}
+            </span>
+          </div>
+          <Progress value={weeklyPct} className="h-2.5 bg-teal-100" />
+          {weeklyPct < 100 && (
+            <p className="text-[11px] text-gray-500">
+              Faltam{' '}
+              <strong className="text-teal-700">
+                {trainingGoal.tipo_objetivo === 'calorias'
+                  ? `${trainingGoal.valor_alvo - weeklyCalories} kcal`
+                  : `${trainingGoal.valor_alvo - weeklyMinutes} min`}
+              </strong>{' '}
+              para bater a meta semanal. Registre um treino na{' '}
+              <Link to="/diet" className="underline font-semibold text-teal-700">
+                Minha Dieta
+              </Link>
+              .
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 3 Metrics Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

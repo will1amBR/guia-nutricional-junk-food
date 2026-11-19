@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchCatalogItems } from '@/services/nutrition'
-import type { CatalogItem, CategoriaAlimento } from '@/types'
+import { fetchFavoriteIds, fetchFavorites, toggleFavorite } from '@/services/favorites'
+import type { CatalogItem, CategoriaAlimento, Favorito } from '@/types'
 import {
   Search,
   X,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   UserPlus,
   Lock,
+  Heart,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/input'
@@ -29,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 
 const CATEGORIAS: { label: string; value: CategoriaAlimento | 'Todas' }[] = [
   { label: 'Todas', value: 'Todas' },
@@ -53,12 +56,19 @@ export const CATEGORY_COLORS: Record<CategoriaAlimento, string> = {
 
 export default function Catalog() {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [items, setItems] = useState<CatalogItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas')
   const [sortBy, setSortBy] = useState<string>('calorias-desc')
   const [displayCount, setDisplayCount] = useState(9)
+
+  // Favoritos (por usuário logado)
+  const [favorites, setFavorites] = useState<Favorito[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
+  const [favoritePendingId, setFavoritePendingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchCatalogItems()
@@ -67,17 +77,46 @@ export default function Catalog() {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    if (!user) return
+    fetchFavorites(user.id)
+      .then((favs) => {
+        setFavorites(favs)
+        setFavoriteIds(new Set(favs.map((f) => f.alimento)))
+      })
+      .catch((err) => console.error('Erro ao carregar favoritos:', err))
+  }, [user])
+
+  const handleToggleFavorite = async (itemId: string) => {
+    if (!user) return
+    setFavoritePendingId(itemId)
+    try {
+      const { favorites: updated, isFavorite } = await toggleFavorite(user.id, itemId, favorites)
+      setFavorites(updated)
+      setFavoriteIds(new Set(updated.map((f) => f.alimento)))
+      toast({
+        title: isFavorite ? '❤️ Adicionado aos favoritos' : 'Removido dos favoritos',
+      })
+    } catch (err) {
+      console.error('Erro ao alternar favorito:', err)
+      toast({ title: 'Não foi possível atualizar os favoritos', variant: 'destructive' })
+    } finally {
+      setFavoritePendingId(null)
+    }
+  }
+
   const filteredAndSortedItems = useMemo(() => {
     return items
       .filter((item) => {
         const matchesCategory = selectedCategory === 'Todas' || item.categoria === selectedCategory
+        const matchesFavorites = !showOnlyFavorites || favoriteIds.has(item.id)
         const term = search.toLowerCase().trim()
         const matchesSearch =
           !term ||
           item.nome.toLowerCase().includes(term) ||
           item.estabelecimento.toLowerCase().includes(term)
 
-        return matchesCategory && matchesSearch
+        return matchesCategory && matchesSearch && matchesFavorites
       })
       .sort((a, b) => {
         if (sortBy === 'calorias-desc') return b.calorias - a.calorias
@@ -86,7 +125,7 @@ export default function Catalog() {
         if (sortBy === 'nome-asc') return a.nome.localeCompare(b.nome, 'pt-BR')
         return 0
       })
-  }, [items, search, selectedCategory, sortBy])
+  }, [items, search, selectedCategory, sortBy, showOnlyFavorites, favoriteIds])
 
   const visibleItems = filteredAndSortedItems.slice(0, displayCount)
   const hasMore = displayCount < filteredAndSortedItems.length
@@ -209,8 +248,26 @@ export default function Catalog() {
           </div>
         </div>
 
-        {/* Category Filter Chips */}
+        {/* Filters Row: favoritos + categorias */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-orange-200">
+          {user && (
+            <button
+              type="button"
+              onClick={() => setShowOnlyFavorites((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border shrink-0 ${
+                showOnlyFavorites
+                  ? 'bg-[#E63946] text-white border-[#E63946] shadow-xs'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-[#E63946]/50 hover:bg-red-50/50'
+              }`}
+            >
+              <Heart
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  showOnlyFavorites ? 'fill-white' : 'text-[#E63946]'
+                }`}
+              />
+              Meus Favoritos ({favoriteIds.size})
+            </button>
+          )}
           <Filter className="w-4 h-4 text-gray-400 shrink-0 ml-1 hidden sm:block" />
           {CATEGORIAS.map((cat) => {
             const isSelected = selectedCategory === cat.value
@@ -219,7 +276,7 @@ export default function Catalog() {
                 key={cat.value}
                 type="button"
                 onClick={() => setSelectedCategory(cat.value)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border shrink-0 ${
                   isSelected
                     ? 'bg-[#FF6B35] text-white border-[#FF6B35] shadow-xs'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
@@ -242,13 +299,16 @@ export default function Catalog() {
         <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-orange-200 p-8">
           <p className="text-base font-semibold text-gray-700">Nenhum item encontrado.</p>
           <p className="text-xs text-gray-500 mt-1">
-            Tente buscar com outro termo ou limpar os filtros de categoria.
+            {showOnlyFavorites
+              ? 'Você ainda não favoritou nenhum item com esses filtros — toque no coração de um card para salvar.'
+              : 'Tente buscar com outro termo ou limpar os filtros de categoria.'}
           </p>
           <Button
             variant="outline"
             onClick={() => {
               setSearch('')
               setSelectedCategory('Todas')
+              setShowOnlyFavorites(false)
             }}
             className="mt-4 border-orange-200 text-[#FF6B35] hover:bg-orange-50 text-xs"
           >
@@ -285,14 +345,53 @@ export default function Catalog() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />
-                      <div className="absolute top-3 left-3">
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <Badge
                           variant="outline"
                           className={`${catClass} font-bold text-xs backdrop-blur-xs px-2.5 py-0.5 rounded-full`}
                         >
                           {item.categoria}
                         </Badge>
+                        {user && favoriteIds.has(item.id) && (
+                          <span
+                            className="w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center shadow-sm"
+                            title="Está nos seus favoritos"
+                          >
+                            <Heart className="w-3.5 h-3.5 fill-[#E63946] text-[#E63946]" />
+                          </span>
+                        )}
                       </div>
+                      {user && (
+                        <div className="absolute top-3 right-3">
+                          <button
+                            type="button"
+                            aria-label={
+                              favoriteIds.has(item.id)
+                                ? 'Remover dos favoritos'
+                                : 'Adicionar aos favoritos'
+                            }
+                            onClick={() => handleToggleFavorite(item.id)}
+                            disabled={favoritePendingId === item.id}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xs transition-all duration-200 shadow-sm border ${
+                              favoriteIds.has(item.id)
+                                ? 'bg-white/95 border-[#E63946]/40'
+                                : 'bg-white/85 border-white/60 hover:bg-white hover:scale-110'
+                            }`}
+                          >
+                            {favoritePendingId === item.id ? (
+                              <Loader2 className="w-4 h-4 text-[#E63946] animate-spin" />
+                            ) : (
+                              <Heart
+                                className={`w-4.5 h-4.5 transition-colors ${
+                                  favoriteIds.has(item.id)
+                                    ? 'fill-[#E63946] text-[#E63946]'
+                                    : 'text-gray-400'
+                                }`}
+                              />
+                            )}
+                          </button>
+                        </div>
+                      )}
                       <div className="absolute bottom-3 right-3">
                         <span className="bg-black/75 backdrop-blur-xs text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
                           <Flame className="w-3.5 h-3.5 text-[#FF6B35]" />

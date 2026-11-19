@@ -8,7 +8,8 @@ import {
   addFoodLog,
 } from '@/services/nutrition'
 import { generateRecommendation } from '@/services/recommendations'
-import type { CatalogItem, RegistroAlimentar, RecommendationResult } from '@/types'
+import { fetchFavorites, toggleFavorite } from '@/services/favorites'
+import type { CatalogItem, RegistroAlimentar, RecommendationResult, Favorito } from '@/types'
 import { CATEGORY_COLORS } from './Catalog'
 import {
   MapPin,
@@ -56,7 +57,24 @@ export default function CatalogDetail() {
   const [addingToDiet, setAddingToDiet] = useState(false)
   const [isSavedInDiet, setIsSavedInDiet] = useState(false)
 
+  // Favoritos
+  const [favorites, setFavorites] = useState<Favorito[]>([])
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+
+  useEffect(() => {
+    if (!user) return
+    // Uma única consulta por página, em vez de uma por card
+    fetchFavorites(user.id)
+      .then((favs) => {
+        setFavorites(favs)
+        const ids = new Set(favs.map((f) => f.alimento))
+        if (id) setIsFavorite(ids.has(id))
+      })
+      .catch((err) => console.error('Erro ao carregar favoritos:', err))
+  }, [user, id])
 
   useEffect(() => {
     if (!id) return
@@ -102,6 +120,36 @@ export default function CatalogDetail() {
       )
       .slice(0, 3)
   }, [item, allItems])
+
+  const handleToggleFavorite = async () => {
+    if (!user || !item) {
+      navigate('/login', { state: { from: { pathname: `/catalog/${item?.id || ''}` } } })
+      return
+    }
+    setFavoriteLoading(true)
+    try {
+      const { favorites: updated, isFavorite: nowFavorite } = await toggleFavorite(
+        user.id,
+        item.id,
+        favorites,
+      )
+      setFavorites(updated)
+      setIsFavorite(nowFavorite)
+      toast({
+        title: nowFavorite ? '❤️ Adicionado aos favoritos' : 'Removido dos favoritos',
+        description: item.nome,
+      })
+    } catch (err) {
+      console.error('Erro ao alternar favorito:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar favoritos',
+        description: 'Tente novamente em instantes.',
+      })
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
 
   const handleToggleDiet = async () => {
     if (!user) {
@@ -241,6 +289,31 @@ export default function CatalogDetail() {
                 {item.categoria}
               </Badge>
             </div>
+            {user && (
+              <div className="absolute top-4 right-4">
+                <button
+                  type="button"
+                  aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                  onClick={handleToggleFavorite}
+                  disabled={favoriteLoading}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 shadow-sm border ${
+                    isFavorite
+                      ? 'bg-white/95 border-[#E63946]/40'
+                      : 'bg-white/85 border-white/60 hover:bg-white hover:scale-110'
+                  }`}
+                >
+                  {favoriteLoading ? (
+                    <Loader2 className="w-5 h-5 text-[#E63946] animate-spin" />
+                  ) : (
+                    <Heart
+                      className={`w-5 h-5 transition-colors ${
+                        isFavorite ? 'fill-[#E63946] text-[#E63946]' : 'text-gray-400'
+                      }`}
+                    />
+                  )}
+                </button>
+              </div>
+            )}
             <div className="absolute bottom-4 right-4">
               <span className="bg-black/75 backdrop-blur-md text-white text-sm font-extrabold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
                 <Flame className="w-4 h-4 text-[#FF6B35]" />

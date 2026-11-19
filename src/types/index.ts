@@ -110,7 +110,6 @@ export interface MetaTreino {
   tipo_objetivo: TipoObjetivoTreino
   valor_alvo: number
   ativa?: boolean
-  semana_chave?: string
   created?: string
   updated?: string
 }

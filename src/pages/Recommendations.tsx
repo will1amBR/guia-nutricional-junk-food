@@ -2,9 +2,11 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCatalogItems, fetchDailyFoodLogs, addFoodLog } from '@/services/nutrition'
+import { fetchFavoriteIds } from '@/services/favorites'
 import { calculateDailyTotals, rankCatalogRecommendations } from '@/services/recommendations'
 import type { CatalogItem, RegistroAlimentar, RecommendationResult } from '@/types'
 import {
+  Heart,
   Sparkles,
   Clock,
   MapPin,
@@ -35,8 +37,17 @@ export default function Recommendations() {
   const [activeTab, setActiveTab] = useState<'momento' | 'lugar'>('momento')
   const [expandedWhy, setExpandedWhy] = useState<Record<string, boolean>>({})
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+
+  useEffect(() => {
+    if (!user) return
+    // Uma única consulta por página
+    fetchFavoriteIds(user.id)
+      .then(setFavoriteIds)
+      .catch((err) => console.error('Erro ao carregar favoritos:', err))
+  }, [user])
 
   const loadData = async () => {
     if (!user) return
@@ -159,6 +170,14 @@ export default function Recommendations() {
               <span className="absolute bottom-1 right-1 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                 {rec.item.calorias} kcal
               </span>
+              {favoriteIds.has(rec.item.id) && (
+                <span
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
+                  title="Está nos seus favoritos"
+                >
+                  <Heart className="w-3.5 h-3.5 fill-[#E63946] text-[#E63946]" />
+                </span>
+              )}
             </div>
 
             <div className="space-y-1">

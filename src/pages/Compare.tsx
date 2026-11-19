@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { fetchCatalogItems } from '@/services/nutrition'
+import { fetchFavoriteIds } from '@/services/favorites'
 import { useAuth } from '@/contexts/AuthContext'
 import type { CatalogItem } from '@/types'
 import {
+  Heart,
   ArrowLeftRight,
   Flame,
   Award,
@@ -60,6 +62,25 @@ export default function Compare() {
 
   const item1Id = searchParams.get('item1') || ''
   const item2Id = searchParams.get('item2') || ''
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!user) return
+    // Uma única consulta por página
+    fetchFavoriteIds(user.id)
+      .then(setFavoriteIds)
+      .catch((err) => console.error('Erro ao carregar favoritos:', err))
+  }, [user])
+
+  const favoriteItems = useMemo(
+    () => catalog.filter((i) => favoriteIds.has(i.id)),
+    [catalog, favoriteIds],
+  )
+
+  const fillFromFavorite = (side: 1 | 2, itemId: string) => {
+    if (side === 1) handleSelect1(itemId)
+    else handleSelect2(itemId)
+  }
 
   useEffect(() => {
     fetchCatalogItems()
@@ -251,6 +272,43 @@ export default function Compare() {
 
       {/* Selectors Bar */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-orange-100 shadow-sm space-y-6">
+        {user && favoriteItems.length > 0 && (
+          <div className="flex items-start gap-3 pb-4 border-b border-orange-100/70">
+            <div className="min-w-0 flex-1 space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#E63946] flex items-center gap-1.5">
+                <Heart className="w-3.5 h-3.5 fill-[#E63946]" /> Usar favorito
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-orange-200">
+                {favoriteItems.map((fav) => (
+                  <div
+                    key={fav.id}
+                    className="flex items-center rounded-full border border-[#E63946]/30 bg-[#E63946]/5 overflow-hidden shrink-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => fillFromFavorite(1, fav.id)}
+                      className="px-3 py-1.5 text-xs font-semibold text-[#B4232F] hover:bg-[#E63946]/10 transition-colors"
+                      title={`Colocar ${fav.nome} no primeiro campo`}
+                    >
+                      <span className="border-b border-dotted border-[#B4232F]/60">1º</span> ·{' '}
+                      {fav.nome}
+                    </button>
+                    <span className="w-px self-stretch bg-[#E63946]/20" />
+                    <button
+                      type="button"
+                      onClick={() => fillFromFavorite(2, fav.id)}
+                      className="px-3 py-1.5 text-xs font-semibold text-[#B4232F] hover:bg-[#E63946]/10 transition-colors"
+                      title={`Colocar ${fav.nome} no segundo campo`}
+                    >
+                      <span className="border-b border-dotted border-[#B4232F]/60">2º</span> ·{' '}
+                      {fav.nome}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
           {/* Selector 1 */}
           <div className="md:col-span-5 space-y-2">
