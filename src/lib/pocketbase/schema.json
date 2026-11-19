@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T04:27:46.616Z",
+  "generatedAt": "2026-11-19T04:01:59.761Z",
   "collections": [
     {
       "name": "users",
@@ -416,6 +416,108 @@
       "indexes": [
         "CREATE INDEX idx_exercicios_usuario ON exercicios (usuario)",
         "CREATE INDEX idx_exercicios_data ON exercicios (data)"
+      ]
+    },
+    {
+      "name": "metas_treino",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "usuario",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "tipo_objetivo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["minutos", "calorias"]
+        },
+        {
+          "name": "valor_alvo",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "ativa",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_metas_treino_usuario ON metas_treino (usuario)",
+        "CREATE UNIQUE INDEX idx_metas_treino_usuario_ativa ON metas_treino (usuario) WHERE ativa = 1"
+      ]
+    },
+    {
+      "name": "favoritos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && usuario.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "usuario",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "alimento",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "catalog"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_favoritos_usuario ON favoritos (usuario)",
+        "CREATE UNIQUE INDEX idx_favoritos_usuario_alimento ON favoritos (usuario, alimento)"
       ]
     }
   ]

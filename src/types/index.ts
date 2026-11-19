@@ -102,6 +102,30 @@ export interface ExercicioRegistro {
   updated?: string
 }
 
+export type TipoObjetivoTreino = 'minutos' | 'calorias'
+
+export interface MetaTreino {
+  id: string
+  usuario: string
+  tipo_objetivo: TipoObjetivoTreino
+  valor_alvo: number
+  ativa?: boolean
+  semana_chave?: string
+  created?: string
+  updated?: string
+}
+
+export interface Favorito {
+  id: string
+  usuario: string
+  alimento: string
+  created?: string
+  updated?: string
+  expand?: {
+    alimento?: CatalogItem
+  }
+}
+
 export interface UserAuth {
   id: string
   email: string
